@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import ProductItem from "../ProductItem";
 
@@ -16,7 +16,32 @@ const products = [
 
 const ProductList = () => {
 	const [addedItems, setAddedItems] = useState([]);
-	const { tg } = useTelegram();
+	const { tg, queryId } = useTelegram();
+
+	const title = new URLSearchParams(window.location.search).get("title");
+
+	const onSendData = useCallback(() => {
+		const data = {
+			queryId,
+			products: addedItems,
+		};
+
+		fetch("some url", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(data),
+		});
+	}, [addedItems.length]);
+
+	useEffect(() => {
+		tg.onEvent("mainButtonClicked", onSendData);
+
+		return () => {
+			tg.offEvent("mainButtonClicked", onSendData);
+		};
+	}, [onSendData]);
 
 	const getTotalPrice = (items) => {
 		return items.reduce((acc, item) => acc + item.price, 0);
@@ -45,15 +70,18 @@ const ProductList = () => {
 	};
 
 	return (
-		<div className="list">
-			{products.map((product) => (
-				<ProductItem
-					key={product.id}
-					product={product}
-					onAdd={onAdd}
-					className="item"
-				/>
-			))}
+		<div>
+			<h1>{title}</h1>
+			<div className="list">
+				{products.map((product) => (
+					<ProductItem
+						key={product.id}
+						product={product}
+						onAdd={onAdd}
+						className="item"
+					/>
+				))}
+			</div>
 		</div>
 	);
 };
